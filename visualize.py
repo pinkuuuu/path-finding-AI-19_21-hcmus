@@ -45,6 +45,9 @@ class Node:
     
     def is_end(self):
         return self.color == RED
+
+    def is_bonus(self):
+        return self.color == PURPLE
     
     def reset(self):
         self.color = WHITE
@@ -63,6 +66,9 @@ class Node:
     
     def make_end(self):
         self.color = RED
+
+    def make_bonus(self):
+        self.color = PURPLE
 
     def make_path(self):
         self.color = YELLOW
@@ -177,12 +183,18 @@ def main(win, width):
                             node.update_neighbors(grid)
                     
                     #pathfinding.DFS(lambda: draw(win, grid, ROWS, ROWS, width), start)
+                    pathfinding.greedy(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
+                    #pathfinding.astar(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r and not started:
                     for row in grid:
                         for node in row:
                             node.reset()
+                            if node == start:
+                                start = None
+                            elif node == end:
+                                end = None
     pygame.quit()
 
 main(WIN, WIDTH)
