@@ -1,5 +1,6 @@
 import pygame
 from pygame.event import get
+import algorithms as pathfinding
 
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH,WIDTH))
@@ -10,13 +11,13 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 PURPLE = (128, 0, 128)
 GREY = (128, 128, 128)
-CYAN = (224,255,255)
+CYAN = (0,255,255)
 RED = (255, 0, 0)
 AZURE = (0, 128, 255)
 GREEN = (0, 255, 0)
 
 class Node:
-    def __init__(self, row, col, width, total_rows):
+    def __init__(self, row, col, width, total_rows, total_cols):
         self.row = row
         self.col = col
         self.x = row * width
@@ -25,6 +26,7 @@ class Node:
         self.neighbors = []
         self.width = width
         self.total_rows = total_rows
+        self.total_cols = total_cols
     
     def get_pos(self):
         return self.row, self.col
@@ -69,37 +71,49 @@ class Node:
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
     def update_neighbors(self,grid):
-        pass
+        self.neighbors = []
+
+        if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): #UP
+            self.neighbors.append(grid[self.row - 1][self.col]) 
+
+        if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): #LEFT
+            self.neighbors.append(grid[self.row][self.col - 1])
+
+        if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): #DOWN
+            self.neighbors.append(grid[self.row + 1][self.col])
+
+        if self.col < self.total_cols - 1 and not grid[self.row][self.col + 1].is_barrier(): #RIGHT
+            self.neighbors.append(grid[self.row][self.col + 1]) 
 
     def __lt__(self, other):
         return False
 
-def make_grid(rows, width):
+def make_grid(rows, cols, width):
     grid = []
     gap = width // rows
     for i in range(rows):
         grid.append([])
-        for j in range(rows):
-            node = Node(i, j, gap, rows)
+        for j in range(cols):
+            node = Node(i, j, gap, rows, cols)
             grid[i].append(node)
     
     return grid
 
-def draw_grid(win, rows, width):
+def draw_grid(win, rows, cols, width):
     gap = width // rows
     for i in range(rows):
         pygame.draw.line(win, GREY, (0, i*gap), (width, i*gap))
-        for j in range(rows):
+        for j in range(cols):
             pygame.draw.line(win, GREY, (j*gap,0), (j*gap, width))
     
-def draw(win, grid, rows, width):
+def draw(win, grid, rows, cols, width):
     win.fill(WHITE)
     
     for row in grid:
         for node in row:
             node.draw(win)
 
-    draw_grid(win, rows, width)
+    draw_grid(win, rows, cols, width)
     pygame.display.update()
 
 def get_clicked_pos(pos, rows, width):
@@ -113,7 +127,7 @@ def get_clicked_pos(pos, rows, width):
 
 def main(win, width):
     ROWS = 50
-    grid = make_grid(ROWS, width)
+    grid = make_grid(ROWS, ROWS, width)
 
     start = None
     end = None
@@ -121,7 +135,7 @@ def main(win, width):
     run = True
     started = False
     while run:
-        draw(win, grid, ROWS, width)
+        draw(win, grid, ROWS, ROWS, width)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -156,6 +170,19 @@ def main(win, width):
                 elif node == end:
                     end = None
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and not started:
+                    for row in grid:
+                        for node in row:
+                            node.update_neighbors(grid)
+                    
+                    #pathfinding.DFS(lambda: draw(win, grid, ROWS, ROWS, width), start)
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r and not started:
+                    for row in grid:
+                        for node in row:
+                            node.reset()
     pygame.quit()
 
 main(WIN, WIDTH)
