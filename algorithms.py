@@ -4,6 +4,7 @@ import pygame
 from queue import PriorityQueue
 
 def DFS(draw, start): #draw is class Node's draw function
+    cost = 0
     stack = []
     stack.append([start]) # stack stores the whole path instead of nodes
     while stack:
@@ -17,9 +18,11 @@ def DFS(draw, start): #draw is class Node's draw function
             for node in path:
                 if not node.is_start() and not node.is_end():
                     node.make_path()
+            print(f'Chi phí thực hiện đường đi: {cost}')
             return True         
         if current.is_open():
             current.make_visited()
+            cost += current.get_point()
         for neighbor in current.neighbors:
             if not neighbor.is_barrier() and not neighbor.is_visited() and not neighbor.is_start():
                 new_path = list(path)
@@ -33,6 +36,7 @@ def DFS(draw, start): #draw is class Node's draw function
     return False
 
 def BFS(draw, start): #draw is class Node's draw function
+    cost = 0
     queue = []
     queue.append([start]) # queue stores the whole path instead of nodes
     while queue:
@@ -46,9 +50,11 @@ def BFS(draw, start): #draw is class Node's draw function
             for node in path:
                 if not node.is_start() and not node.is_end():
                     node.make_path()
+            print(f'Chi phí thực hiện đường đi: {cost}')
             return True
         if current.is_open():
             current.make_visited()
+            cost += current.get_point()
         for neighbor in current.neighbors:
             if not neighbor.is_barrier() and not neighbor.is_visited() and not neighbor.is_start() and not neighbor.is_open():
                 new_path = list(path)
@@ -67,6 +73,7 @@ def h(p1, p2): # heuristic function (Manhattan distance)
     return abs(x1 - x2) + abs(y1 - y2)
 
 def greedy(draw, grid, start, end):
+    cost = 0
     count = 0 # if there's 2 equal f_score we priority the one came in first
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # open_set stores (f_score, insert order, node)
@@ -88,9 +95,11 @@ def greedy(draw, grid, start, end):
                 current = came_from[current]
                 if not current.is_start() and not current.is_end():
                     current.make_path()
+            print(f'Chi phí thực hiện đường đi: {cost}')
             return True
         if current.is_open():
             current.make_visited()
+            cost += current.get_point()
         for neighbor in current.neighbors:
             if not neighbor.is_visited() and not neighbor.is_start():    
                 if neighbor.is_bonus() or neighbor.is_loss():
@@ -110,6 +119,7 @@ def greedy(draw, grid, start, end):
     return False
 
 def astar(draw, grid, start, end):
+    cost = 0
     count = 0 # if there's 2 equal f_score we priority the one came in first
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # open_set stores (f_score, insert order, node)
@@ -137,6 +147,7 @@ def astar(draw, grid, start, end):
                 current = came_from[current]
                 if not current.is_start() and not current.is_end():
                     current.make_path()
+            print(f'Chi phí thực hiện đường đi: {cost}')
             return True
 
         for neighbor in current.neighbors:
@@ -163,5 +174,6 @@ def astar(draw, grid, start, end):
 
         if current.is_open():
             current.make_visited()
+            cost += current.get_point()
 
     return False
