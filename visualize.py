@@ -1,6 +1,9 @@
 import pygame
 from pygame.event import get
 import algorithms as pathfinding
+from tkinter import filedialog
+from tkinter import simpledialog
+from tkinter import messagebox
 
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH,WIDTH))
@@ -14,10 +17,12 @@ GREY = (128, 128, 128)
 CYAN = (0,255,255)
 RED = (255, 0, 0)
 AZURE = (0, 128, 255)
-GREEN = (0, 255, 0)
+GREEN = (3, 172, 19)
+LOSS = (163, 44, 196)
+BONUS = (242, 107, 138)
 
 class Node:
-    def __init__(self, row, col, width, total_rows, total_cols):
+    def __init__(self, row, col, width, point, total_rows, total_cols):
         self.row = row
         self.col = col
         self.x = row * width
@@ -25,11 +30,18 @@ class Node:
         self.color = WHITE
         self.neighbors = []
         self.width = width
+        self.point = point
         self.total_rows = total_rows
         self.total_cols = total_cols
     
     def get_pos(self):
-        return self.row, self.col
+        return self.col, self.row
+
+    def get_point(self):
+        return self.point
+
+    def set_point(self, point):
+        self.point = point
     
     def is_visited(self):
         return self.color == CYAN
@@ -47,10 +59,14 @@ class Node:
         return self.color == RED
 
     def is_bonus(self):
-        return self.color == PURPLE
+        return self.color == BONUS
+
+    def is_loss(self):
+        return self.color == LOSS
     
     def reset(self):
         self.color = WHITE
+        self.point = 1
 
     def make_visited(self):
         self.color = CYAN
@@ -68,7 +84,10 @@ class Node:
         self.color = RED
 
     def make_bonus(self):
-        self.color = PURPLE
+        self.color = BONUS
+
+    def make_loss(self):
+        self.color = LOSS
 
     def make_path(self):
         self.color = YELLOW
@@ -100,7 +119,7 @@ def make_grid(rows, cols, width):
     for i in range(rows):
         grid.append([])
         for j in range(cols):
-            node = Node(i, j, gap, rows, cols)
+            node = Node(i, j, gap, 1, rows, cols)
             grid[i].append(node)
     
     return grid
@@ -131,9 +150,34 @@ def get_clicked_pos(pos, rows, width):
 
     return row, col
 
+def open_file():
+	file_path = filedialog.askopenfilename(initialdir=".\\")
+
+	bonus_points = {}
+	matrix = []
+
+	file = open(file_path, 'r')
+	n_bonus_points = int(next(file)[:-1])
+
+	for i in range(n_bonus_points):
+		x, y, reward = map(int, next(file)[:-1].split(' '))
+		bonus_points[(x, y)] = reward
+
+	text = file.read()
+	matrix = [list(i) for i in text.splitlines()]
+	file.close()
+	
+	return bonus_points, matrix
+
+
 def main(win, width):
-    ROWS = 50
+    ROWS = 23
     grid = make_grid(ROWS, ROWS, width)
+
+    messagebox.showinfo("Help", "F1 Help\nPress 1 to use DFS\nPress 2 to use BFS\nPress 3 to use Greedy\nPress 4 to use A*\nPress 5 to show current algorithm\nPress O to open a maze from file\nPress R to clear maze")
+
+    bonus_points = {}
+    mode = 'none'
 
     start = None
     end = None
@@ -175,16 +219,113 @@ def main(win, width):
                     start = None
                 elif node == end:
                     end = None
+                    
+            elif pygame.mouse.get_pressed()[1]:
+                pos = pygame.mouse.get_pos()
+                point = simpledialog.askinteger("","Input bonus point")
+                if point:
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    node = grid[row][col]
+                    node.set_point(point)
 
+                if point == 0:
+                    return True
+
+                elif point < 0:
+                    node.make_bonus()
+
+                elif point > 0:
+                    node.make_loss()
+            
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    mode = 'DFS'
+
+                if event.key == pygame.K_2:
+                    mode = 'BFS'
+
+                if event.key == pygame.K_3:
+                    mode = 'Greedy'
+
+                if event.key == pygame.K_4:
+                    mode = 'A*'
+
+                if event.key == pygame.K_5:
+                    messagebox.showinfo("Current Algorithm", mode)
+
+                if event.key == pygame.K_F1:
+                    messagebox.showinfo("Help", "F1 Help\nPress 1 to use DFS\nPress 2 to use BFS\nPress 3 to use Greedy\nPress 4 to use A*\nPress 5 to show current algorithm\nPress O to open a maze from file\nPress R to clear maze")
+
                 if event.key == pygame.K_SPACE and not started:
                     for row in grid:
                         for node in row:
                             node.update_neighbors(grid)
-                    
-                    #pathfinding.DFS(lambda: draw(win, grid, ROWS, ROWS, width), start)
-                    pathfinding.greedy(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
-                    #pathfinding.astar(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
+                
+                    if mode == 'DFS':
+                        pathfinding.DFS(lambda: draw(win, grid, ROWS, ROWS, width), start, end)
+
+                    if mode == 'BFS':
+                        pathfinding.BFS(lambda: draw(win, grid, ROWS, ROWS, width), start, end)
+
+                    if mode == 'Greedy':
+                        pathfinding.greedy(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
+
+                    if mode == 'A*':
+                        pathfinding.astar(lambda: draw(win, grid, ROWS, ROWS, width), grid, start, end)
+
+                    if mode == 'none':
+                        messagebox.showwarning("Warning","You're not choosing any algorithm\nClose this and\nF1 Help\nPress 1 to use DFS\nPress 2 to use BFS\nPress 3 to use Greedy\nPress 4 to use A*\nPress 5 to show current algorithm\nPress O to open a maze from file\nPress R to clear maze")
+
+
+                if event.key == pygame.K_o:
+                    if start or end: 
+                        start = None
+                        end = None
+                        grid = make_grid(ROWS, ROWS, width)
+
+                    bonus_points, matrix = open_file()
+
+                    for i in range(len(matrix)):
+                        for j in range(len(matrix[0])):
+                            # row, col = get_clicked_pos([j*16, i*16], ROWS, width)
+                            if matrix[i][j] == 'S':
+                                node = grid[j][i]
+                                start = node
+                                start.make_start()
+
+                            elif matrix[i][j] == '+':
+                                node = grid[j][i]
+                                node.set_point(bonus_points[(i, j)])
+
+                                if bonus_points[node.get_pos()] < 0:
+                                    node.make_bonus()
+
+                                if bonus_points[node.get_pos()] > 0:
+                                    node.make_loss()
+
+                            elif matrix[i][j] == 'x':
+                                node = grid[j][i]
+                                node.make_barrier()
+
+                            elif matrix[0][j] == ' ' and i == 0:
+                                node = grid[j][i]
+                                end = node
+                                end.make_end()
+
+                            elif matrix[-1][j] == ' ' and i == len(matrix) - 1:
+                                node = grid[j][i]
+                                end = node
+                                end.make_end()
+
+                            elif matrix[i][0] == ' ' and j == 0:
+                                node = grid[j][i]
+                                end = node
+                                end.make_end()
+
+                            elif matrix[i][-1] == ' ' and j == len(matrix[0]) - 1:
+                                node = grid[j][i]
+                                end = node
+                                end.make_end()
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r and not started:
